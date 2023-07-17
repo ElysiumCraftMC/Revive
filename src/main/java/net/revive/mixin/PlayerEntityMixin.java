@@ -1,5 +1,7 @@
 package net.revive.mixin;
 
+import net.minecraft.network.packet.c2s.play.ClientStatusC2SPacket;
+import net.minecraft.server.network.ServerPlayerEntity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -56,6 +58,8 @@ public abstract class PlayerEntityMixin extends LivingEntity implements PlayerEn
                     this.drop(DamageSource.GENERIC);
                 this.world.sendEntityStatus(this, (byte) 60);
                 this.remove(Entity.RemovalReason.KILLED);
+                ServerPlayerEntity serverPlayerEntity = (ServerPlayerEntity) (Object) this;
+                serverPlayerEntity.networkHandler.onClientStatus(new ClientStatusC2SPacket(ClientStatusC2SPacket.Mode.PERFORM_RESPAWN));
             }
         }
     }
