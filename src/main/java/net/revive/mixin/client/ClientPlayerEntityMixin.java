@@ -2,6 +2,11 @@ package net.revive.mixin.client;
 
 import com.mojang.authlib.GameProfile;
 
+import net.minecraft.client.network.ClientPlayNetworkHandler;
+import net.minecraft.entity.damage.DamageSource;
+import net.minecraft.network.packet.c2s.play.ClientStatusC2SPacket;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.revive.packet.ReviveServerPacket;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Mutable;
@@ -30,8 +35,21 @@ public abstract class ClientPlayerEntityMixin extends AbstractClientPlayerEntity
     @Final
     protected MinecraftClient client;
 
+    @Shadow
+    @Final
+    public ClientPlayNetworkHandler networkHandler;
+
     public ClientPlayerEntityMixin(ClientWorld world, GameProfile profile, PlayerPublicKey publicKey) {
         super(world, profile, publicKey);
+    }
+
+    @Override
+    public void requestRespawn() {
+        if(ReviveMain.CONFIG.timer != -1) {
+            this.deathTime = ReviveMain.CONFIG.timer;
+        }else {
+            this.networkHandler.sendPacket(new ClientStatusC2SPacket(net.minecraft.network.packet.c2s.play.ClientStatusC2SPacket.Mode.PERFORM_RESPAWN));
+        }
     }
 
     @Inject(method = "updatePostDeath", at = @At("HEAD"), cancellable = true)
@@ -41,8 +59,7 @@ public abstract class ClientPlayerEntityMixin extends AbstractClientPlayerEntity
         this.deathTime++;
         if (ReviveMain.CONFIG.timer == -1 || (ReviveMain.CONFIG.timer != -1 && ReviveMain.CONFIG.timer > this.deathTime))
             info.cancel();
-        else if (this.deathTime >= 20)
-            this.remove(Entity.RemovalReason.KILLED);
+        else if (this.deathTime >= 20) this.remove(Entity.RemovalReason.KILLED);
 
     }
 
