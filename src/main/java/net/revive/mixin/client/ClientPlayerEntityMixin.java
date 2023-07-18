@@ -46,7 +46,7 @@ public abstract class ClientPlayerEntityMixin extends AbstractClientPlayerEntity
     @Override
     public void requestRespawn() {
         if(ReviveMain.CONFIG.timer != -1) {
-            this.deathTime = ReviveMain.CONFIG.timer;
+            this.deathTime = ReviveMain.CONFIG.timer - 5;
         }else {
             this.networkHandler.sendPacket(new ClientStatusC2SPacket(net.minecraft.network.packet.c2s.play.ClientStatusC2SPacket.Mode.PERFORM_RESPAWN));
         }
