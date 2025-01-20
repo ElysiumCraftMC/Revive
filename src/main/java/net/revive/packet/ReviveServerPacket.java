@@ -8,10 +8,15 @@ import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.network.packet.s2c.play.CustomPayloadS2CPacket;
+import net.minecraft.scoreboard.Scoreboard;
+import net.minecraft.scoreboard.ScoreboardPlayerScore;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
 import net.revive.ReviveMain;
 import net.revive.accessor.PlayerEntityAccessor;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ReviveServerPacket {
 
@@ -20,6 +25,8 @@ public class ReviveServerPacket {
     public static final Identifier DEATH_REASON_PACKET = new Identifier("revive", "death_reason");
     public static final Identifier REVIVABLE_PACKET = new Identifier("revive", "revivable");
     public static final Identifier FIRST_PERSON_PACKET = new Identifier("revive", "first_person");
+
+    public static final Logger LOGGER = LoggerFactory.getLogger(ReviveServerPacket.class);
 
     public static void init() {
         ServerPlayNetworking.registerGlobalReceiver(REVIVE_PACKET, (server, player, handler, buffer, sender) -> {
@@ -34,7 +41,17 @@ public class ReviveServerPacket {
                 if (isSupportiveRevival)
                     healthPoints = ReviveMain.CONFIG.reviveSupportiveHealthPoints;
                 player.setHealth(healthPoints);
+                // Gives air to revived player
+                player.setAir(player.getMaxAir());
                 player.onSpawn();
+
+                // Reset combatlog score on player revive
+                Scoreboard scoreboard = player.getScoreboard();
+                ScoreboardPlayerScore combatLog = scoreboard.getPlayerScore(player.getName().getString(), scoreboard.getObjective("combatlog"));
+                if (combatLog.getScore() > 0) {
+                    combatLog.setScore(0);
+                    LOGGER.info("Resetting combatlog score for player '{}'", player.getName().getString());
+                }
 
                 if (ReviveMain.CONFIG.reviveEffects) {
                     if (isSupportiveRevival)
